@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyVSPackage
+namespace VSIXProject1
 {
-    public class Class1
+    public interface IMyService
     {
+        int Add(int a, int b);
     }
 }
