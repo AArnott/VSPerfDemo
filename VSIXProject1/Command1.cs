@@ -78,13 +78,6 @@ namespace VSIXProject1
             Instance = new Command1(package);
         }
 
-        /// <summary>
-        /// This function is the callback used to execute the command when the menu item is clicked.
-        /// See the constructor to see how the menu item is associated with this function using
-        /// OleMenuCommandService service and MenuCommand class.
-        /// </summary>
-        /// <param name="sender">Event sender.</param>
-        /// <param name="e">Event args.</param>
         private void MenuItemCallback(object sender, EventArgs e)
         {
             string title = "Command1";
