@@ -104,11 +104,16 @@ namespace VSIXProject1
                     return;
                 }
 
-                // Clear and refresh some cache I have.
-                // And update the error list.
-                // And send telemetry.
-                // And walk the dog.
-                SpinWait.SpinUntil(() => false, 5000);
+                this.package.JoinableTaskFactory.RunAsync(async delegate
+                {
+                    await TaskScheduler.Default;
+
+                    // Clear and refresh some cache I have.
+                    // And update the error list.
+                    // And send telemetry.
+                    // And walk the dog.
+                    SpinWait.SpinUntil(() => false, 5000);
+                });
             }
         }
     }
