@@ -1,8 +1,11 @@
 ﻿using System;
 using System.ComponentModel.Design;
-using System.Globalization;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.TaskStatusCenter;
+using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
+using Task = System.Threading.Tasks.Task;
 
 namespace VSIXProject1
 {
@@ -24,14 +27,14 @@ namespace VSIXProject1
         /// <summary>
         /// VS Package that provides this command, not null.
         /// </summary>
-        private readonly Package package;
+        private readonly AsyncPackage package;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Command1"/> class.
         /// Adds our command handlers for menu (commands must exist in the command table file)
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
-        private Command1(Package package)
+        private Command1(AsyncPackage package)
         {
             if (package == null)
             {
@@ -39,14 +42,6 @@ namespace VSIXProject1
             }
 
             this.package = package;
-
-            OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (commandService != null)
-            {
-                var menuCommandID = new CommandID(CommandSet, CommandId);
-                var menuItem = new MenuCommand(this.MenuItemCallback, menuCommandID);
-                commandService.AddCommand(menuItem);
-            }
         }
 
         /// <summary>
@@ -61,7 +56,7 @@ namespace VSIXProject1
         /// <summary>
         /// Gets the service provider from the owner package.
         /// </summary>
-        private IServiceProvider ServiceProvider
+        private IAsyncServiceProvider ServiceProvider
         {
             get
             {
@@ -73,23 +68,56 @@ namespace VSIXProject1
         /// Initializes the singleton instance of the command.
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
-        public static void Initialize(Package package)
+        public static async Task InitializeAsync(AsyncPackage package)
         {
             Instance = new Command1(package);
+
+            OleMenuCommandService commandService = await Instance.ServiceProvider.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+            if (commandService != null)
+            {
+                var menuCommandID = new CommandID(CommandSet, CommandId);
+                var menuItem = new MenuCommand(Instance.MenuItemCallback, menuCommandID);
+                commandService.AddCommand(menuItem);
+            }
         }
 
         private void MenuItemCallback(object sender, EventArgs e)
         {
-            IMyService svc = (IMyService)this.ServiceProvider.GetService(typeof(IMyService));
-            int eight = svc.Add(5, 3);
+            this.package.JoinableTaskFactory.StartOnIdle(async delegate
+            {
+                var tsc = await this.package.GetServiceAsync(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
+                var taskHandler = tsc.PreRegister(
+                    new TaskHandlerOptions
+                    {
+                        Title = "Calculating awesome value",
+                        ActionsAfterCompletion = CompletionActions.RetainOnFaulted | CompletionActions.RetainOnRanToCompletion,
+                        DisplayTaskDetails = t =>
+                        {
+                            Task<int> resultTask = (Task<int>)t;
+                            if (resultTask.IsCompleted)
+                            {
+                                VsShellUtilities.ShowMessageBox(
+                                    this.package,
+                                    $"And here's the answer: 5 + 3 = {resultTask.Result}",
+                                    "Solution",
+                                    OLEMSGICON.OLEMSGICON_INFO,
+                                    OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                                    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                            }
+                        }
+                    },
+                    new TaskProgressData { CanBeCanceled = true });
 
-            VsShellUtilities.ShowMessageBox(
-                this.package,
-                $"And here's the answer: 5 + 3 = {eight}",
-                "Solution",
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                var longRunningTask = Task.Run(async delegate
+                {
+                    IMyService svc = (IMyService)await this.ServiceProvider.GetServiceAsync(typeof(IMyService));
+                    taskHandler.UserCancellation.ThrowIfCancellationRequested();
+                    int eight = svc.Add(5, 3);
+                    return eight;
+                });
+                taskHandler.RegisterTask(longRunningTask);
+                await longRunningTask;
+            });
         }
     }
 }

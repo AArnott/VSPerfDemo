@@ -43,7 +43,7 @@ namespace VSIXProject1
             }
 
             this.AddService(typeof(IMyService), async (sc, ct, st) => await MyService.CreateAsync(this));
-            Command1.Initialize(this);
+            await Command1.InitializeAsync(this);
         }
 
         protected override void Dispose(bool disposing)
