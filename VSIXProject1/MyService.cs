@@ -15,11 +15,7 @@ namespace VSIXProject1
     {
         public MyService(IServiceProvider sp)
         {
-            ErrorHandler.ThrowOnFailure(VsShellUtilities.ShowMessageBox(sp, $"{nameof(MyService)} construction start", nameof(VSPackage1), OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST));
-
-            Task.Delay(5000).Wait();
-
-            ErrorHandler.ThrowOnFailure(VsShellUtilities.ShowMessageBox(sp, $"{nameof(MyService)} construction end", nameof(VSPackage1), OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST));
+            SpinWait.SpinUntil(() => false, 5000);
         }
 
         public int Add(int a, int b) => a + b;

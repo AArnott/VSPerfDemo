@@ -80,23 +80,13 @@ namespace VSIXProject1
 
         private void MenuItemCallback(object sender, EventArgs e)
         {
-            string title = "Command1";
-
-            VsShellUtilities.ShowMessageBox(
-                this.ServiceProvider,
-                "Sit tight. We're about to kick off a bunch of work to do a math problem for you.",
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-
             IMyService svc = (IMyService)this.ServiceProvider.GetService(typeof(IMyService));
             int eight = svc.Add(5, 3);
 
             VsShellUtilities.ShowMessageBox(
-                this.ServiceProvider,
+                this.package,
                 $"And here's the answer: 5 + 3 = {eight}",
-                title,
+                "Solution",
                 OLEMSGICON.OLEMSGICON_INFO,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);

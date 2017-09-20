@@ -2,6 +2,7 @@
 using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -31,8 +32,6 @@ namespace VSIXProject1
 
         protected override void Initialize()
         {
-            ErrorHandler.ThrowOnFailure(VsShellUtilities.ShowMessageBox(this, "Package.Initialize start", nameof(VSPackage1), OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST));
-
             base.Initialize();
 
             this.sbm = this.GetService(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager5;
@@ -44,9 +43,8 @@ namespace VSIXProject1
             ((IServiceContainer)this).AddService(typeof(IMyService), (sc, st) => new MyService(this));
             Command1.Initialize(this);
 
-            Task.Delay(5000).Wait();
-
-            ErrorHandler.ThrowOnFailure(VsShellUtilities.ShowMessageBox(this, "Package.Initialize end", nameof(VSPackage1), OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST));
+            SpinWait.SpinUntil(() => false, 5000); // some intense CPU activity
+            Task.Delay(1000).Wait(); // some I/O
         }
 
         protected override void Dispose(bool disposing)
@@ -112,15 +110,7 @@ namespace VSIXProject1
                 // And update the error list.
                 // And send telemetry.
                 // And walk the dog.
-                Task.Delay(5000).Wait();
-
-                VsShellUtilities.ShowMessageBox(
-                    this.package,
-                    $"This delay brought to you by {nameof(VSPackage1)} in response to a config change.",
-                    nameof(VSPackage1),
-                    OLEMSGICON.OLEMSGICON_INFO,
-                    OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                SpinWait.SpinUntil(() => false, 5000);
             }
         }
     }
