@@ -3,21 +3,23 @@ using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace VSIXProject1
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
-    [ProvideService(typeof(IMyService))]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string)]
+    [ProvideService(typeof(IMyService), IsAsyncQueryable = true)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [Guid(VSPackage1.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    public sealed class VSPackage1 : Package
+    public sealed class VSPackage1 : AsyncPackage
     {
         public const string PackageGuidString = "3f23421c-df28-4856-9427-761c3447581e";
         private uint sbmCookie = VSConstants.VSCOOKIE_NIL;
@@ -28,21 +30,24 @@ namespace VSIXProject1
             // DON'T PUT ANYTHING HERE. JUST DELETE IT.
         }
 
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
+            await base.InitializeAsync(cancellationToken, progress);
 
-            ThreadHelper.ThrowIfNotOnUIThread();
-            this.sbm = this.GetService(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager5;
+            await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            this.sbm = await this.GetServiceAsync(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager5;
             if (this.sbm != null)
             {
                 this.sbm.AdviseUpdateSolutionEvents4(new SolutionEventReceiver(this), out sbmCookie);
             }
 
+            await TaskScheduler.Default;
             SpinWait.SpinUntil(() => false, 5000); // some intense CPU activity
-            this.LotsOfIO(); // some I/O
+            await this.LotsOfIOAsync(); // some I/O
 
-            ((IServiceContainer)this).AddService(typeof(IMyService), (sc, st) => new MyService(this));
+            await this.JoinableTaskFactory.SwitchToMainThreadAsync();
+            this.AddService(typeof(IMyService), (sc, ct, st) => Task.FromResult<object>(new MyService(this)));
             Command1.Initialize(this);
         }
 
@@ -61,11 +66,9 @@ namespace VSIXProject1
             base.Dispose(disposing);
         }
 
-        private void LotsOfIO()
+        private Task LotsOfIOAsync()
         {
-#pragma warning disable VSTHRD002 // it's just a demo
-            Task.Delay(1000).Wait();
-#pragma warning restore VSTHRD002
+            return Task.Delay(1000);
         }
 
         private class SolutionEventReceiver : IVsUpdateSolutionEvents4
