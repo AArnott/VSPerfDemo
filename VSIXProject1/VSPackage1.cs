@@ -42,12 +42,7 @@ namespace VSIXProject1
                 this.sbm.AdviseUpdateSolutionEvents4(new SolutionEventReceiver(this), out sbmCookie);
             }
 
-            await TaskScheduler.Default;
-            SpinWait.SpinUntil(() => false, 5000); // some intense CPU activity
-            await this.LotsOfIOAsync(); // some I/O
-
-            await this.JoinableTaskFactory.SwitchToMainThreadAsync();
-            this.AddService(typeof(IMyService), (sc, ct, st) => Task.FromResult<object>(new MyService(this)));
+            this.AddService(typeof(IMyService), async (sc, ct, st) => await MyService.CreateAsync(this));
             Command1.Initialize(this);
         }
 
@@ -64,11 +59,6 @@ namespace VSIXProject1
             }
 
             base.Dispose(disposing);
-        }
-
-        private Task LotsOfIOAsync()
-        {
-            return Task.Delay(1000);
         }
 
         private class SolutionEventReceiver : IVsUpdateSolutionEvents4
