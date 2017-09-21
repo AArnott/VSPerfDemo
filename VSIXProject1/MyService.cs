@@ -15,7 +15,6 @@ namespace VSIXProject1
     {
         public MyService(IServiceProvider sp)
         {
-            SpinWait.SpinUntil(() => false, 5000);
         }
 
         public int Add(int a, int b) => a + b;

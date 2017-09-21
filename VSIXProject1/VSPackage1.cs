@@ -28,8 +28,6 @@ namespace VSIXProject1
             // DON'T PUT ANYTHING HERE. JUST DELETE IT.
         }
 
-        #region Package Members
-
         protected override void Initialize()
         {
             base.Initialize();
@@ -40,11 +38,11 @@ namespace VSIXProject1
                 this.sbm.AdviseUpdateSolutionEvents4(new SolutionEventReceiver(this), out sbmCookie);
             }
 
-            ((IServiceContainer)this).AddService(typeof(IMyService), (sc, st) => new MyService(this));
-            Command1.Initialize(this);
-
             SpinWait.SpinUntil(() => false, 5000); // some intense CPU activity
             Task.Delay(1000).Wait(); // some I/O
+
+            ((IServiceContainer)this).AddService(typeof(IMyService), (sc, st) => new MyService(this));
+            Command1.Initialize(this);
         }
 
         protected override void Dispose(bool disposing)
@@ -60,8 +58,6 @@ namespace VSIXProject1
 
             base.Dispose(disposing);
         }
-
-        #endregion
 
         private class SolutionEventReceiver : IVsUpdateSolutionEvents4
         {
