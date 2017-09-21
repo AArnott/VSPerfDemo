@@ -32,6 +32,7 @@ namespace VSIXProject1
         {
             base.Initialize();
 
+            ThreadHelper.ThrowIfNotOnUIThread();
             this.sbm = this.GetService(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager5;
             if (this.sbm != null)
             {
@@ -39,7 +40,7 @@ namespace VSIXProject1
             }
 
             SpinWait.SpinUntil(() => false, 5000); // some intense CPU activity
-            Task.Delay(1000).Wait(); // some I/O
+            this.LotsOfIO(); // some I/O
 
             ((IServiceContainer)this).AddService(typeof(IMyService), (sc, st) => new MyService(this));
             Command1.Initialize(this);
@@ -49,6 +50,7 @@ namespace VSIXProject1
         {
             if (disposing)
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
                 if (this.sbmCookie != VSConstants.VSCOOKIE_NIL && this.sbm != null)
                 {
                     this.sbm.UnadviseUpdateSolutionEvents4(this.sbmCookie);
@@ -57,6 +59,13 @@ namespace VSIXProject1
             }
 
             base.Dispose(disposing);
+        }
+
+        private void LotsOfIO()
+        {
+#pragma warning disable VSTHRD002 // it's just a demo
+            Task.Delay(1000).Wait();
+#pragma warning restore VSTHRD002
         }
 
         private class SolutionEventReceiver : IVsUpdateSolutionEvents4
